@@ -1,11 +1,15 @@
 const express = require('express');
-const puppeteer = require('puppeteer');
+const puppeteer = require('puppeteer-core');
 const cors = require('cors');
+const { execSync } = require('child_process');
 
 const app = express();
-const PORT = process.env.PORT || 3000;
+const PORT = 3000;
 
 app.use(cors());
+
+// Find the installed Chrome binary (Render usually installs it to /usr/bin/google-chrome)
+const CHROME_PATH = execSync('which google-chrome').toString().trim();
 
 app.get('/scrape', async (req, res) => {
   const { res_id, page } = req.query;
@@ -19,13 +23,14 @@ app.get('/scrape', async (req, res) => {
   try {
     const browser = await puppeteer.launch({
       headless: 'new',
-      args: ['--no-sandbox', '--disable-setuid-sandbox']
+      executablePath: CHROME_PATH,
+      args: ['--no-sandbox', '--disable-setuid-sandbox'],
     });
 
     const pageInstance = await browser.newPage();
 
     await pageInstance.setExtraHTTPHeaders({
-      'User-Agent': 'Mozilla/5.0'
+      'User-Agent': 'Mozilla/5.0',
     });
 
     await pageInstance.goto(url, { waitUntil: 'networkidle2' });
