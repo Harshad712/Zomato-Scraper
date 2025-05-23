@@ -1,15 +1,9 @@
-# Use official Node.js slim image
+# Use official Node.js image
 FROM node:20-slim
 
-# Set environment variable to skip Puppeteer's default Chromium download
-ENV PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true
-
-# Install dependencies required by Chrome
+# Install required packages for Puppeteer
 RUN apt-get update && \
     apt-get install -y \
-    wget \
-    gnupg \
-    ca-certificates \
     fonts-liberation \
     libappindicator3-1 \
     libasound2 \
@@ -25,28 +19,23 @@ RUN apt-get update && \
     libxdamage1 \
     libxrandr2 \
     xdg-utils \
+    wget \
+    ca-certificates \
     --no-install-recommends && \
-    apt-get clean && \
-    rm -rf /var/lib/apt/lists/*
-
-# Install Chrome manually
-RUN wget https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb && \
-    dpkg -i google-chrome-stable_current_amd64.deb || true && \
-    apt-get -f install -y && \
-    rm google-chrome-stable_current_amd64.deb
+    apt-get clean && rm -rf /var/lib/apt/lists/*
 
 # Create app directory
 WORKDIR /app
 
-# Copy package.json files and install dependencies
+# Copy package files and install dependencies
 COPY package*.json ./
 RUN npm install
 
-# Copy the rest of your app's code
+# Copy rest of the app
 COPY . .
 
-# Expose the port your app runs on
+# Expose app port
 EXPOSE 3000
 
-# Run the server
+# Start the app
 CMD ["node", "server.js"]
