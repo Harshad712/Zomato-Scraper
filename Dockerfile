@@ -1,9 +1,11 @@
 # Use official Node.js image
 FROM node:20-slim
 
-# Install required packages for Puppeteer
+# Install required dependencies for Puppeteer + Chromium
 RUN apt-get update && \
     apt-get install -y \
+    wget \
+    ca-certificates \
     fonts-liberation \
     libappindicator3-1 \
     libasound2 \
@@ -18,23 +20,22 @@ RUN apt-get update && \
     libxcomposite1 \
     libxdamage1 \
     libxrandr2 \
+    libgbm1 \
     xdg-utils \
-    wget \
-    ca-certificates \
     --no-install-recommends && \
     apt-get clean && rm -rf /var/lib/apt/lists/*
 
-# Create app directory
+# Set working directory
 WORKDIR /app
 
 # Copy package files and install dependencies
 COPY package*.json ./
 RUN npm install
 
-# Copy rest of the app
+# Copy app source
 COPY . .
 
-# Expose app port
+# Expose port
 EXPOSE 3000
 
 # Start the app
