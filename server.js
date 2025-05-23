@@ -1,15 +1,14 @@
 const express = require('express');
 const puppeteer = require('puppeteer-core');
 const cors = require('cors');
-const { execSync } = require('child_process');
 
 const app = express();
 const PORT = 3000;
 
-app.use(cors());
+// ✅ Hardcoded path to Chrome (installed via Dockerfile)
+const CHROME_PATH = '/usr/bin/google-chrome-stable';
 
-// Find the installed Chrome binary (Render usually installs it to /usr/bin/google-chrome)
-const CHROME_PATH = execSync('which google-chrome').toString().trim();
+app.use(cors());
 
 app.get('/scrape', async (req, res) => {
   const { res_id, page } = req.query;
@@ -28,7 +27,6 @@ app.get('/scrape', async (req, res) => {
     });
 
     const pageInstance = await browser.newPage();
-
     await pageInstance.setExtraHTTPHeaders({
       'User-Agent': 'Mozilla/5.0',
     });
@@ -37,7 +35,6 @@ app.get('/scrape', async (req, res) => {
     const content = await pageInstance.evaluate(() => document.body.innerText);
 
     await browser.close();
-
     res.json(JSON.parse(content));
   } catch (err) {
     console.error('Scraping failed:', err);
