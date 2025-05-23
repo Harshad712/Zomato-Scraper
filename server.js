@@ -1,6 +1,6 @@
-const puppeteer = require('puppeteer');
 const express = require('express');
 const cors = require('cors');
+const axios = require('axios');
 
 const app = express();
 app.use(cors());
@@ -12,34 +12,27 @@ app.get('/scrape', async (req, res) => {
     return res.status(400).json({ error: 'Missing res_id or page' });
   }
 
-  let browser;
+  const offset = (page - 1) * 5;
+  const url = `https://www.zomato.com/webroutes/reviews/loadMore?res_id=${res_id}&limit=5&offset=${offset}&profile_action=fromRestaurantReview`;
+
   try {
-    browser = await puppeteer.launch({
-      headless: 'new',
-      args: ['--no-sandbox', '--disable-setuid-sandbox']
+    const response = await axios.get(url, {
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)',
+        'Accept': 'application/json, text/plain, */*',
+        'Referer': `https://www.zomato.com/`,
+      }
     });
 
-    const pageObj = await browser.newPage();
-
-    const targetUrl = `https://www.zomato.com/webroutes/reviews/loadMore?res_id=${res_id}&limit=5&offset=${(page - 1) * 5}&profile_action=fromRestaurantReview`;
-
-    await pageObj.goto(targetUrl, {
-      waitUntil: 'domcontentloaded',
-    });
-
-    // Extract the raw JSON string from the page
-    const rawBody = await pageObj.evaluate(() => document.body.innerText);
-
-    // Safely parse JSON
-    const json = JSON.parse(rawBody);
-
-    await browser.close();
-    res.json(json);
+    res.json(response.data);
   } catch (error) {
-    if (browser) await browser.close();
+    const details = error.response?.status === 403
+      ? 'Access Denied by Zomato (403)'
+      : error.message;
+
     res.status(500).json({
       error: 'Scraping failed',
-      details: error.message
+      details,
     });
   }
 });
