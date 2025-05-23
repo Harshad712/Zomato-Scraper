@@ -5,6 +5,8 @@ const axios = require('axios');
 const app = express();
 app.use(cors());
 
+const SCRAPER_API_KEY = '57eda6a2bce736dff7b490cb45003b0c'; // Replace with your actual key
+
 app.get('/scrape', async (req, res) => {
   const { res_id, page } = req.query;
 
@@ -13,26 +15,22 @@ app.get('/scrape', async (req, res) => {
   }
 
   const offset = (page - 1) * 5;
-  const url = `https://www.zomato.com/webroutes/reviews/loadMore?res_id=${res_id}&limit=5&offset=${offset}&profile_action=fromRestaurantReview`;
+  const targetUrl = `https://www.zomato.com/webroutes/reviews/loadMore?res_id=${res_id}&limit=5&offset=${offset}&profile_action=fromRestaurantReview`;
 
   try {
-    const response = await axios.get(url, {
-      headers: {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)',
-        'Accept': 'application/json, text/plain, */*',
-        'Referer': `https://www.zomato.com/`,
+    const response = await axios.get('http://api.scraperapi.com', {
+      params: {
+        api_key: SCRAPER_API_KEY,
+        url: targetUrl
       }
     });
 
-    res.json(response.data);
+    const data = JSON.parse(response.data.match(/{.*}/s)[0]); // In case wrapper HTML is present
+    res.json(data);
   } catch (error) {
-    const details = error.response?.status === 403
-      ? 'Access Denied by Zomato (403)'
-      : error.message;
-
     res.status(500).json({
       error: 'Scraping failed',
-      details,
+      details: error.message
     });
   }
 });
